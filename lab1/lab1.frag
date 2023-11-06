@@ -10,6 +10,7 @@ uniform sampler2D tex;
 
 uniform int displayGPUversion;
 uniform float ringDensity;
+uniform float time;
 
 //const float ringDensity = 10.0;
 
@@ -80,9 +81,9 @@ void main(void)
 {
 	if (displayGPUversion == 1)
 	{
-		vec2 f = texCoord * 2.0 - vec2(1.0);
-		float radius = length(f); // Same as sqrt(fx*fx + fy * fy);
-		out_Color = vec4(cos(radius * ringDensity)/ 2.0 + 0.5, 0.5, sin(radius * ringDensity)/ 2.0 + 0.5, 1.0);
+        vec2 f = noise(texCoord) * 2.0 + time - vec2(1.0); // Switched texCood with noise(texCoord)
+        float radius = length(f); // Same as sqrt(fx*fx + fy * fy);
+        out_Color = vec4(cos(radius * ringDensity)/ 2.0 + 0.5, 0.5, sin(radius * ringDensity)/ 2.0 + 0.5, 1.0);
 	}
 	else
 		out_Color = texture(tex, texCoord);

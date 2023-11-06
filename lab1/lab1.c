@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include "VectorUtils4.h"
 #include "LittleOBJLoader.h"
+#include <stdbool.h>
 
 // Lab 1 specific
 // Code for you to access to make interesting patterns.
@@ -52,6 +53,39 @@ void maketexture()
 		ptex[x][y][1] = fyo * 127 + 127;
 		ptex[x][y][2] = 128;
 	}
+}
+
+// Brick pattern.
+void makeBrickTexture()
+{
+    int x, y;
+    int brickWidth = 20;
+    int brickHeight = 50;
+    int mortarSize = 6;
+    char val;
+
+    for (x = 0; x < kTextureSize; x++)
+    for (y = 0; y < kTextureSize; y++)
+    {
+        // Determine if this pixel is in the mortar or in a brick
+        bool inMortar = (x % brickWidth < mortarSize) || (y % brickHeight < mortarSize);
+
+        // If in the mortar, make the pixel white, otherwise make it red
+        if (inMortar)
+        {
+            ptex[x][y][0] = 220; // Red
+            ptex[x][y][1] = 220; // Green
+            ptex[x][y][2] = 220; // Blue
+        }
+        else
+        {
+            float xScaled = (float)x/(float)kTextureSize;
+            float yScaled = (float)y/(float)kTextureSize;
+            ptex[x][y][0] = 240 * noise2(xScaled, yScaled); // Red
+            ptex[x][y][1] = 0;   // Green
+            ptex[x][y][2] = 0;   // Blue
+        }
+    }
 }
 
 // Globals
@@ -108,10 +142,11 @@ void init(void)
 	glUniform1i(glGetUniformLocation(program, "tex"), 0); // Texture unit 0
 
 // Constants common to CPU and GPU
-	glUniform1i(glGetUniformLocation(program, "displayGPUversion"), 0); // shader generation off
+	glUniform1i(glGetUniformLocation(program, "displayGPUversion"), 1); // shader generation off
 	glUniform1f(glGetUniformLocation(program, "ringDensity"), ringDensity);
 
-	maketexture();
+	//maketexture();
+	makeBrickTexture();
 
 // Upload texture
 	glGenTextures(1, &texid); // texture id
@@ -141,6 +176,8 @@ void display(void)
 
 	// clear the screen
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glUniform1f(glGetUniformLocation(program, "time"), glutGet(GLUT_ELAPSED_TIME) / 1000.0);
 
 	DrawModel(quad, program, "in_Position", NULL, "in_TexCoord");
 

@@ -188,6 +188,7 @@ void display(void)
 
 int main(int argc, char *argv[])
 {
+	glutRepeatingTimer(20);
 	glutInit(&argc, argv);
 	glutInitContextVersion(3, 2);
 	glutInitWindowSize(kTextureSize, kTextureSize);

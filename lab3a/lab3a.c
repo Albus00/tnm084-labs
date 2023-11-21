@@ -98,22 +98,34 @@ gluggModel MakeTree()
 	// Between gluggBegin and gluggEnd, call MakeCylinderAlt plus glugg transformations
 	// to create a tree.
 
-	MakeBranch(5, 0, 3, 1, 100);
+	MakeBranch(4, 0, 3, 1);
 
 	return gluggBuildModel(0);
 }
 
-void MakeBranch(const int maxDepth, int currentDepth, const int maxSporuts, int currentSprout, const int tilt) {
+void MakeBranch(const int maxDepth, int currentDepth, const int maxSporuts, int currentSprout) {
     gluggPushMatrix();
-    MakeCylinderAlt(3, 2, 0.1, 0.15);
+
     if (currentDepth > 0) {
-        gluggTranslate(0, 2, 0);
-        printf("Rotation: %f, current sprout: %i\n", (360/(float)maxSporuts) * ((float)currentSprout-1), currentSprout);
-        gluggRotate((2*3.14/maxSporuts) * (currentSprout-1), 0, 1, 0);
-        gluggRotate(tilt, 0, 0, 1);
-        const float scaling = 0.8;
-        gluggScale(scaling, scaling, scaling);
+        // Branch
+        float height = (float)rand()/(float)(RAND_MAX/2.5);
+        MakeCylinderAlt(3, height, 0.1, 0.15);
+        gluggTranslate(0, height, 0);
     }
+    else {
+        // Stem
+        MakeCylinderAlt(3, 2, 0.1, 0.15);
+        gluggTranslate(0, 2, 0);
+    }
+        printf("Rotation: %f deg, sprout: %i, depth: %i\n", (360/(float)maxSporuts) * ((float)currentSprout-1), currentSprout, currentDepth);
+
+        float rotation = (float)rand()/(float)(RAND_MAX/(2*3.14));
+        gluggRotate(rotation, 0, 1, 0);
+
+        float tilt = (float)rand()/(float)(RAND_MAX/(3.14/4));
+        gluggRotate(tilt, 0, 0, 1);
+        const float scaling = 0.7;
+        gluggScale(scaling, scaling, scaling);
 
     printf("%i , %i \n", currentDepth, currentSprout);
 
@@ -132,13 +144,13 @@ void MakeBranch(const int maxDepth, int currentDepth, const int maxSporuts, int 
             printf("POP\n");
             gluggPopMatrix();
             currentSprout++;
-            MakeBranch(maxDepth, currentDepth, maxSporuts, currentSprout, tilt);
+            MakeBranch(maxDepth, currentDepth, maxSporuts, currentSprout);
         }
     }
     else {
         // Random depth, build branch
         currentDepth++;
-        MakeBranch(maxDepth, currentDepth, maxSporuts, 1, tilt);
+        MakeBranch(maxDepth, currentDepth, maxSporuts, 1);
         currentDepth--;
 
         if (currentSprout < maxSporuts) {
@@ -146,7 +158,7 @@ void MakeBranch(const int maxDepth, int currentDepth, const int maxSporuts, int 
             printf("POP\n");
             gluggPopMatrix();
             currentSprout++;
-            MakeBranch(maxDepth, currentDepth, maxSporuts, currentSprout, tilt);
+            MakeBranch(maxDepth, currentDepth, maxSporuts, currentSprout);
         }
         else {
             // This is the last branch at a random depth

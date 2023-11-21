@@ -82,6 +82,11 @@ GLuint indices2[] = {	0,3,2, 0,2,1};
 
 // THIS IS WHERE YOUR WORK GOES!
 
+bool checkForRoot(int currentDepth)
+{
+    return (currentDepth == 0);
+}
+
 gluggModel MakeTree()
 {
 	gluggSetPositionName("inPosition");
@@ -93,9 +98,63 @@ gluggModel MakeTree()
 	// Between gluggBegin and gluggEnd, call MakeCylinderAlt plus glugg transformations
 	// to create a tree.
 
-	MakeCylinderAlt(20, 2, 0.1, 0.15);
+	MakeBranch(5, 0, 3, 1, 100);
 
 	return gluggBuildModel(0);
+}
+
+void MakeBranch(const int maxDepth, int currentDepth, const int maxSporuts, int currentSprout, const int tilt) {
+    gluggPushMatrix();
+    MakeCylinderAlt(3, 2, 0.1, 0.15);
+    if (currentDepth > 0) {
+        gluggTranslate(0, 2, 0);
+        printf("Rotation: %f, current sprout: %i\n", (360/(float)maxSporuts) * ((float)currentSprout-1), currentSprout);
+        gluggRotate((2*3.14/maxSporuts) * (currentSprout-1), 0, 1, 0);
+        gluggRotate(tilt, 0, 0, 1);
+        const float scaling = 0.8;
+        gluggScale(scaling, scaling, scaling);
+    }
+
+    printf("%i , %i \n", currentDepth, currentSprout);
+
+
+    if (currentDepth == maxDepth) {
+        // Max depth
+        if (currentSprout == maxSporuts) {
+            // Max depth at last sprout
+            printf("Last at max depth\n");
+            printf("POP\n");
+            gluggPopMatrix();
+            return;
+        }
+        else {
+            // Max depth at random sprout
+            printf("POP\n");
+            gluggPopMatrix();
+            currentSprout++;
+            MakeBranch(maxDepth, currentDepth, maxSporuts, currentSprout, tilt);
+        }
+    }
+    else {
+        // Random depth, build branch
+        currentDepth++;
+        MakeBranch(maxDepth, currentDepth, maxSporuts, 1, tilt);
+        currentDepth--;
+
+        if (currentSprout < maxSporuts) {
+            // This is not the last sprout, build more sprouts
+            printf("POP\n");
+            gluggPopMatrix();
+            currentSprout++;
+            MakeBranch(maxDepth, currentDepth, maxSporuts, currentSprout, tilt);
+        }
+        else {
+            // This is the last branch at a random depth
+            printf("POP\n");
+            gluggPopMatrix();
+            return;
+        }
+    }
 }
 
 gluggModel tree;

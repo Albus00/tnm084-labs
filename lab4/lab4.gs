@@ -74,8 +74,11 @@ float noise(vec3 st)
 void computeVertex(int nr)
 {
 	vec3 p, v1, v2, v3, p1, p2, p3, s1, s2, n;
+	vec3 st = vec3(1,1,1);
 
 	p = vec3(gl_in[nr].gl_Position);
+	p = normalize(p);
+
 	// Add interesting code here
 	gl_Position = projMatrix * camMatrix * mdlMatrix * vec4(p, 1.0);
 

@@ -3,7 +3,7 @@
 layout(triangles) in;
 // Use line_strip for visualization and triangle_strip for solids
 //layout(triangle_strip, max_vertices = 3) out;
-layout(line_strip, max_vertices = 3) out;
+layout(triangle_strip, max_vertices = 3) out;
 in vec2 teTexCoord[3];
 in vec3 teNormal[3];
 out vec2 gsTexCoord;
@@ -71,20 +71,61 @@ float noise(vec3 st)
           	);
 }
 
+float fbm(vec3 st, int octaves){
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < octaves; ++i)
+    {
+        value += amplitude * noise(st);
+        st *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
 void computeVertex(int nr)
 {
 	vec3 p, v1, v2, v3, p1, p2, p3, s1, s2, n;
-	vec3 st = vec3(1,1,1);
 
 	p = vec3(gl_in[nr].gl_Position);
 	p = normalize(p);
+
+	vec3 god_vector = vec3(1.0,0,0);
+
+	// Triangle method to find
+	v1 = normalize(cross(p, god_vector));
+	if (v1 == vec3(0,0,0)) {
+        // If the vector is 0, another arbitrary vector is needed to compare with
+        vec3 god2_vector = vec3(0,1.0,0);
+        v1 = normalize(cross(p, god2_vector));
+	}
+	v2 = normalize(cross(p, v1));
+	v3 = -normalize(v2+v1);
+
+	// Create a small surface parallell to the vector on the surface of the sphere.
+	p1 = v1*0.2 + p;
+	p2 = v2*0.2 + p;
+	p3 = v3*0.2 + p;
+
+    // Add the same noise to the new points
+	p1 = p1+(fbm(p1, 10)*p1);
+	p2 = p2+(fbm(p2, 10)*p2);
+	p3 = p3+(fbm(p3, 10)*p3);
+
+	// Triangle cross method to get the normal
+	s1 = p2-p1;
+	s2 = p3-p1;
+    n = cross(s1,s2);
+    n = normalize(n);
+
+    p = p + (fbm(p, 10))*p;
 
 	// Add interesting code here
 	gl_Position = projMatrix * camMatrix * mdlMatrix * vec4(p, 1.0);
 
     gsTexCoord = teTexCoord[0];
 
-	n = teNormal[nr]; // This is not the normal you are looking for. Move along!
+	//n = teNormal[nr]; // This is not the normal you are looking for. Move along!
     gsNormal = mat3(camMatrix * mdlMatrix) * n;
     EmitVertex();
 }

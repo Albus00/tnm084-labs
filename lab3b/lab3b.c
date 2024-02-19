@@ -30,8 +30,8 @@ GLuint grasstex;
 // Reference to shader programs
 GLuint phongShader, texShader;
 
-#define kTerrainSize 32
-#define kPolySize 1.0
+#define kTerrainSize 512
+#define kPolySize 0.2
 
 // Terrain data. To be intialized in MakeTerrain or in the shader
 vec3 vertices[kTerrainSize*kTerrainSize];
@@ -43,6 +43,22 @@ GLuint indices[(kTerrainSize-1)*(kTerrainSize-1)*3*2];
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 #define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
 
+float fbm(vec2 st, int octaves){
+    float value = 0.0;
+    float amplitude = 0.5;
+    for (int i = 0; i < octaves; ++i)
+    {
+        //printf("%f \n", noise2(0.4*st.x, 0.4*st.y));
+
+        value += amplitude * noise2(0.4*st.x,0.4*st.y);
+
+        st.x *= 2.0;
+        st.y *= 2.0;
+        amplitude *= 0.5;
+    }
+    return value;
+}
+
 void MakeTerrain()
 {
 	// TO DO: This is where your terrain generation goes if on CPU.
@@ -50,17 +66,29 @@ void MakeTerrain()
 	for (int z = 0; z < kTerrainSize; z++)
 	{
 		int ix = z * kTerrainSize + x;
+		vec3 god_vector, v1, v2, v3, p1, p2, p3, normal;
 
-		#define bumpHeight 0.5
-		#define bumpWidth 2.0
+		//#define bumpHeight 0.5
+		//#define bumpWidth 2.0
 
 		// squared distance to center
-		float h = ( (x - kTerrainSize/2)/bumpWidth * (x - kTerrainSize/2)/bumpWidth +  (z - kTerrainSize/2)/bumpWidth * (z - kTerrainSize/2)/bumpWidth );
-		float y = MAX(0, 3-h) * bumpHeight;
+		//float h = ( (x - kTerrainSize/2)/bumpWidth * (x - kTerrainSize/2)/bumpWidth +  (z - kTerrainSize/2)/bumpWidth * (z - kTerrainSize/2)/bumpWidth );
+		//float y = MAX(0, 3 - h) * bumpHeight;
 
-		vertices[ix] = SetVec3(x * kPolySize, y, z * kPolySize);
+		float rand = noise3(0.4*x,0,0.4*z)*1.2*kPolySize;
+		rand += noise3(0.1*x,0,0.1*z)*2;
+
+        rand += fbm(SetVec2((float)x,(float)z), 10);
+
+		if (rand < 0) {
+            rand = 0;
+		}
+
+
+		vertices[ix] = SetVec3(x * kPolySize, rand, z * kPolySize);
 		texCoords[ix] = SetVec2(x, z);
-		normals[ix] = SetVec3(0,1,0);
+        normals[ix] = SetVec3(0,1,0);
+
 	}
 
 	// Make indices
@@ -85,7 +113,43 @@ void MakeTerrain()
 	for (int x = 0; x < kTerrainSize; x++)
 	for (int z = 0; z < kTerrainSize; z++)
 	{
-		normals[z * kTerrainSize + x] = SetVec3(0,1,0);
+	    int ix = z * kTerrainSize + x;
+	    vec3 god_vector, v1, v2, p1, p2, p3, p4, normal;
+
+	    if (x == 0) {
+            p1 = vertices[ix];
+            p2 = vertices[ix+1];
+        }
+        else if (x == kTerrainSize -1) {
+            p1 = vertices[ix-1];
+            p2 = vertices[ix];
+        }
+        else {
+            p1 = vertices[ix-1];
+            p2 = vertices[ix+1];
+        }
+
+        if (z == 0) {
+            p3 = vertices[ix];
+            p4 = vertices[ix+kTerrainSize];
+        }
+        else if (z == kTerrainSize-1) {
+            p3 = vertices[ix-kTerrainSize];
+            p4 = vertices[ix];
+        }
+        else {
+            p3 = vertices[ix-kTerrainSize];
+            p4 = vertices[ix+kTerrainSize];
+        }
+
+        // Create vectors from p1 to p2 and p3 to p4
+        v1 = SetVec3(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+        v2 = SetVec3(p4.x - p3.x, p4.y - p3.y, p4.z - p3.z);;
+
+        // Compute the cross product of v1 and v2
+        normal = cross(v1, v2);
+
+		normals[z * kTerrainSize + x] = normalize(normal);
 	}
 }
 
@@ -116,7 +180,9 @@ void init(void)
 	glUseProgram(texShader);
 	glUniformMatrix4fv(glGetUniformLocation(texShader, "projectionMatrix"), 1, GL_TRUE, projectionMatrix.m);
 
+
 	glUniform1i(glGetUniformLocation(texShader, "tex"), 0); // Texture unit 0
+
 
 	LoadTGATextureSimple("grass.tga", &grasstex);
 	glBindTexture(GL_TEXTURE_2D, grasstex);
